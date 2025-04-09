@@ -13,54 +13,30 @@ import orderRouter from './routes/orderRoute.js';
 import { stripeWebhooks } from './controllers/orderController.js';
 
 const app = express();
-const DEFAULT_PORT = parseInt(process.env.PORT) || 4000;
+const port = process.env.PORT || 5000;
 
-try {
-  await connectDB();
-  await connectCloudinary();
+await connectDB()
+await connectCloudinary()
 
-  // Stripe webhook must come before express.json()
-  app.post('/stripe', express.raw({ type: 'application/json' }), stripeWebhooks);
+// Allow multiple origins
+const allowedOrigins = ['http://localhost:5173', 'https://greencart-3gto.vercel.app']
 
-  // Middleware
-  app.use(express.json());
-  app.use(cookieParser());
+app.post('/stripe', express.raw({type: 'application/json'}), stripeWebhooks)
 
-  // CORS - allow requests from frontend (modify in prod)
-  app.use(cors({
-    origin: true, // Allow all origins during development
-    credentials: true
-  }));
+// Middleware configuration
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors({origin: allowedOrigins, credentials: true}));
 
-  // Basic route
-  app.get('/', (req, res) => res.send("✅ API is Working"));
 
-  // API routes
-  app.use('/api/user', userRouter);
-  app.use('/api/seller', sellerRouter);
-  app.use('/api/product', productRouter);
-  app.use('/api/cart', cartRouter);
-  app.use('/api/address', addressRouter);
-  app.use('/api/order', orderRouter);
+app.get('/', (req, res) => res.send("API is Working"));
+app.use('/api/user', userRouter)
+app.use('/api/seller', sellerRouter)
+app.use('/api/product', productRouter)
+app.use('/api/cart', cartRouter)
+app.use('/api/address', addressRouter)
+app.use('/api/order', orderRouter)
 
-  // Server start with fallback if port is in use
-  const server = app.listen(DEFAULT_PORT)
-    .on('listening', () => {
-      console.log(`✅ Server is running at http://localhost:${DEFAULT_PORT}`);
-    })
-    .on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        const fallbackPort = DEFAULT_PORT + 1;
-        console.warn(`⚠️ Port ${DEFAULT_PORT} in use. Trying port ${fallbackPort}...`);
-        app.listen(fallbackPort, () => {
-          console.log(`✅ Server is running at http://localhost:${fallbackPort}`);
-        });
-      } else {
-        console.error('❌ Server error:', err);
-      }
-    });
-
-} catch (err) {
-  console.error('❌ Error during startup:', err.message);
-  process.exit(1);
-}
+app.listen(port, ()=>{
+    console.log(`Server is running on http://localhost:${port}`)
+})
